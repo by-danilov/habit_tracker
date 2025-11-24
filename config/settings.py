@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'django_celery_beat',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
