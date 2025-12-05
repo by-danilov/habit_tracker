@@ -1,18 +1,18 @@
 from rest_framework import viewsets, generics
-from rest_framework.permissions import IsAuthenticated, AllowAny
-
+from rest_framework.permissions import IsAuthenticated
 from habits.models import Habit
 from habits.serializers import HabitSerializer
-from habits.permissions import IsOwner, IsOwnerOrReadOnly
 from habits.paginators import HabitPaginator
+
+
 
 class MyHabitViewSet(viewsets.ModelViewSet):
     """
     CRUD для личных привычек пользователя.
     """
     serializer_class = HabitSerializer
-    permission_classes = [IsAuthenticated, IsOwner] # Только аутентифицированный владелец
-    pagination_class = HabitPaginator # Применяем пагинацию
+    permission_classes = [IsAuthenticated]
+    pagination_class = HabitPaginator
 
     def get_queryset(self):
         """
@@ -32,8 +32,8 @@ class PublicHabitListView(generics.ListAPIView):
     Список всех публичных привычек. Только для чтения.
     """
     serializer_class = HabitSerializer
-    permission_classes = [IsAuthenticated] # Доступен только аутентифицированным пользователям
-    pagination_class = HabitPaginator # Применяем пагинацию
+    permission_classes = [IsAuthenticated]
+    pagination_class = HabitPaginator
 
     def get_queryset(self):
         """

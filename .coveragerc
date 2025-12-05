@@ -1,0 +1,20 @@
+[run]
+# Где искать файлы для измерения (включает только нужные нам папки)
+source = habits, users, config
+
+[report]
+# Что исключить из отчета (миграции, __init__.py и т.д.)
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == "__main__":
+    def __str__
+    def __repr__
+
+ignore_errors = True
+fail_under = 80
+# Тест не пройдет, если покрытие ниже 80%
+
+[html]
+directory = htmlcov
+# Папка, куда будет сохранен HTML-отчет

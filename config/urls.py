@@ -25,7 +25,7 @@ urlpatterns = [
     path('users/', include('djoser.urls')),
     path('users/', include('djoser.urls.jwt')),
     # Эндпоинты для привычек
-    path('habits/', include('habits.urls')),
+    path('habits/', include(('habits.urls', 'habits'), namespace='habits')),
     
     # Документация (Swagger)
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
