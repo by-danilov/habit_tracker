@@ -47,6 +47,9 @@ COPY . /app
 # Устанавливаем Poetry в финальный образ для доступа к команде 'poetry run'
 RUN pip install poetry
 
+# Отключаем создание виртуального окружения Poetry
+RUN poetry config virtualenvs.create false
+
 # Делаем файлы исполняемыми
 RUN chmod +x manage.py
 
