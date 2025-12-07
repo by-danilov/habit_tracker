@@ -138,6 +138,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Настройки Telegram (для Celery-задач)
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
 # Настройка кастомной модели пользователя (если будем расширять, пока просто указываем)
 AUTH_USER_MODEL = 'users.User'
 
