@@ -21,7 +21,7 @@ COPY pyproject.toml poetry.lock /app/
 # --no-interaction: не требовать ввода
 RUN pip install poetry
 RUN poetry config virtualenvs.create false
-RUN poetry install --only main --no-root --no-interaction
+RUN poetry install --no-root --no-interaction
 
 # СТАДИЯ 2: ФИНАЛЬНЫЙ ОБРАЗ
 
