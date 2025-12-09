@@ -20,7 +20,8 @@ COPY pyproject.toml poetry.lock /app/
 # --only main: устанавливать только основные зависимости (исключая dev)
 # --no-interaction: не требовать ввода
 RUN pip install poetry
-RUN poetry install --no-dev --no-root --no-interaction
+RUN poetry config virtualenvs.create false
+RUN poetry install --only main --no-root --no-interaction
 
 # СТАДИЯ 2: ФИНАЛЬНЫЙ ОБРАЗ
 
