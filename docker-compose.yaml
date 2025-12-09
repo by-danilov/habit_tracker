@@ -1,0 +1,88 @@
+# docker-compose.yaml
+version: '3.8'
+
+services:
+  # 1. База данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    env_file:
+      - .env
+    environment:
+      # Используем переменные из .env
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      # Сохраняем данные базы данных вне контейнера
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      # Открываем порт только для локального доступа, если нужно
+      - "5432:5432"
+    restart: unless-stopped
+
+  # 2. Брокер сообщений Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis_broker
+    # Redis не требует env_file, так как мы используем его без пароля и настроек по умолчанию
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # 3. Django Бэкенд (API)
+  backend:
+    build: .
+    container_name: django_backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env
+    ports:
+      # Основной порт для доступа к API и Swagger
+      - "8000:8000"
+    volumes:
+      # Маппинг кода проекта
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  # 4. Celery Worker (Обработчик задач)
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    command: celery -A config worker -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    # Worker зависит от брокера и базы данных (для моделей)
+    depends_on:
+      - db
+      - redis
+      - backend
+    restart: unless-stopped
+
+  # 5. Celery Beat (Планировщик)
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    # Beat зависит от базы данных (для сохранения расписания) и брокера
+    depends_on:
+      - db
+      - redis
+      - backend
+    restart: unless-stopped
+
+
+volumes:
+  # Объем для сохранения данных PostgreSQL
+  postgres_data:
