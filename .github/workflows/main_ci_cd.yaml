@@ -76,3 +76,4 @@ jobs:
             docker compose up --build -d
             
             echo "Deployment finished successfully!"
+

@@ -44,3 +44,4 @@ class PublicHabitListView(generics.ListAPIView):
         Возвращает только привычки, помеченные как публичные (is_public=True).
         """
         return Habit.objects.filter(is_public=True)
+

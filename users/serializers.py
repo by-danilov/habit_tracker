@@ -26,3 +26,4 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'username', 'telegram_id', 'is_staff')
         ref_name = 'CustomUser'
+
