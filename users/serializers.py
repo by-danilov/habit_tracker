@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import User # Импортируем нашу новую модель
+from users.models import User
 
 class UserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания нового пользователя (регистрация)."""
@@ -25,3 +25,4 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'telegram_id', 'is_staff')
+        ref_name = 'CustomUser'

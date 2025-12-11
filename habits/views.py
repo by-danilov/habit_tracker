@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from habits.models import Habit
 from habits.serializers import HabitSerializer
 from habits.paginators import HabitPaginator
-
+from django.contrib.auth.models import AnonymousUser
 
 
 class MyHabitViewSet(viewsets.ModelViewSet):
@@ -17,7 +17,11 @@ class MyHabitViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Возвращает только привычки, созданные текущим пользователем.
+        Исправлено: Безопасная обработка AnonymousUser для генератора Swagger.
         """
+        if isinstance(self.request.user, AnonymousUser):
+            return Habit.objects.none()
+
         return Habit.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):

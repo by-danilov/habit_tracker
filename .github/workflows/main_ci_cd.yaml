@@ -57,21 +57,21 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-          # 1. Переходим в домашнюю папку пользователя
+            # 1. Переходим в домашнюю папку пользователя
             cd ~
             
-          # 2. Удаляем старую папку, если существует
+            # 2. Удаляем старую папку, если существует
             rm -rf ${{ env.PROJECT_NAME }}
             
-          # 3. Клонируем свежую версию кода
+            # 3. Клонируем свежую версию кода
             git clone --branch main https://github.com/${{ github.repository }}.git ${{ env.PROJECT_NAME }}
             cd ${{ env.PROJECT_NAME }}
             
-          # 4. Создаем .env файл из секрета GitHub
+            # 4. Создаем .env файл из секрета GitHub
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
             
-          # 5. Сборка и запуск контейнеров Docker Compose
-          # (down удаляет старые контейнеры, up --build пересобирает образ и запускает новые)
+            # 5. Сборка и запуск контейнеров Docker Compose
+            # (down удаляет старые контейнеры, up --build пересобирает образ и запускает новые)
             docker compose down 
             docker compose up --build -d
             
