@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Dependencies
         # Устанавливаем все зависимости, включая DEV-зависимости для тестов
-        run: poetry install --no-interaction
+        run: poetry install --no-root
 
       - name: Run Tests with Coverage
         # Запускаем тесты. Если тесты падают, этот шаг провалится, и деплой не начнется.
