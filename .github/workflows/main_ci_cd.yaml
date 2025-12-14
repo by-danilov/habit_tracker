@@ -73,13 +73,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          host: ${{ secrets.HOST_IP }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Run Server
+        run: |
+          ssh -o StrictHostKeyChecking=no -vT ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             # 1. Переходим в домашнюю папку пользователя
             cd ~
             
@@ -95,8 +96,8 @@ jobs:
             
             # 5. Сборка и запуск контейнеров Docker Compose
             # (down удаляет старые контейнеры, up --build пересобирает образ и запускает новые)
-            docker compose down 
+            docker compose down
             docker compose up --build -d
             
             echo "Deployment finished successfully!"
-
+          EOF
