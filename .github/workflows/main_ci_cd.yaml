@@ -96,8 +96,8 @@ jobs:
             
             # 5. Сборка и запуск контейнеров Docker Compose
             # (down удаляет старые контейнеры, up --build пересобирает образ и запускает новые)
-            docker compose down
-            docker compose up --build -d
+            sudo docker compose down
+            sudo docker compose up --build -d
             
             echo "Deployment finished successfully!"
           EOF
