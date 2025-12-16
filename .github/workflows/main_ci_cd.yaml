@@ -1,23 +1,40 @@
 name: Python CI/CD (Test and Deploy)
 
-# Запускать при пуше в ветку main
 on:
   push:
     branches:
       - main
 
-# Определяем общие переменные
 env:
   PYTHON_VERSION: 3.13
-  PROJECT_NAME: habit_tracker # Имя папки, в которую клонируется проект
+  PROJECT_NAME: habit_tracker
 
 jobs:
-  # ТЕСТИРОВАНИЕ ПРОЕКТА
+  # 1. ЛИНТИНГ (Проверка стиля кода)
+  lint:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Linting Tools
+        run: pip install flake8
+
+      - name: Run Flake8
+        # Мы проверяем код, исключая миграции и папки окружения
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=migrations,venv,env
+
+  # 2. ТЕСТИРОВАНИЕ ПРОЕКТА
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-
-    # PostgreSQL для тестов
+    needs: lint # Сначала проверяем стиль, потом запускаем тесты
     services:
       postgres:
         image: postgres:15
@@ -53,51 +70,51 @@ jobs:
         run: pip install poetry
 
       - name: Install Dependencies
-        # Устанавливаем все зависимости, включая DEV-зависимости для тестов
         run: poetry install --no-root
 
       - name: Run Tests with Coverage
-        # Запускаем тесты. Если тесты падают, этот шаг провалится, и деплой не начнется.
         run: poetry run coverage run manage.py test
 
       - name: Generate Coverage Report
         run: poetry run coverage report
 
-  # ДЕПЛОЙ НА СЕРВЕР (запускается только после успешного прохождения тестов)
+  # 3. ПРОВЕРКА СБОРКИ DOCKER-ОБРАЗА
+  build_check:
+    name: Check Docker Build
+    runs-on: ubuntu-latest
+    needs: test # Если тесты не прошли, собирать образ нет смысла
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        # Просто проверяем, что образ собирается без ошибок
+        run: docker build . -t habit_tracker_test:latest
+
+  # 4. ДЕПЛОЙ НА СЕРВЕР
   deploy:
     name: Deploy to Yandex Cloud VM
     runs-on: ubuntu-latest
-    needs: test # Зависит от успешного выполнения job 'test'
+    # Запускается только если прошли линтинг, тесты и сборка
+    needs: [lint, test, build_check]
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - name: Deploy via SSH
+        # Используем проверенный экшен appleboy для SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Run Server
-        run: |
-          ssh -o StrictHostKeyChecking=no -vT ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            # 1. Переходим в домашнюю папку пользователя
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
             cd ~
-            
-            # 2. Удаляем старую папку, если существует
             rm -rf ${{ env.PROJECT_NAME }}
-            
-            # 3. Клонируем свежую версию кода
             git clone --branch main https://github.com/${{ github.repository }}.git ${{ env.PROJECT_NAME }}
             cd ${{ env.PROJECT_NAME }}
-            
-            # 4. Создаем .env файл из секрета GitHub
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
-            
-            # 5. Сборка и запуск контейнеров Docker Compose
-            # (down удаляет старые контейнеры, up --build пересобирает образ и запускает новые)
             sudo docker compose down
             sudo docker compose up --build -d
-            
             echo "Deployment finished successfully!"
-          EOF
