@@ -10,7 +10,7 @@ env:
   PROJECT_NAME: habit_tracker
 
 jobs:
-  # 1. ЛИНТИНГ (Проверка стиля кода)
+  # 1. ЛИНТИНГ
   lint:
     name: Code Linting
     runs-on: ubuntu-latest
@@ -27,14 +27,13 @@ jobs:
         run: pip install flake8
 
       - name: Run Flake8
-        # Мы проверяем код, исключая миграции и папки окружения
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=migrations,venv,env
 
-  # 2. ТЕСТИРОВАНИЕ ПРОЕКТА
+  # 2. ТЕСТИРОВАНИЕ
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    needs: lint # Сначала проверяем стиль, потом запускаем тесты
+    needs: lint
     services:
       postgres:
         image: postgres:15
@@ -78,43 +77,54 @@ jobs:
       - name: Generate Coverage Report
         run: poetry run coverage report
 
-  # 3. ПРОВЕРКА СБОРКИ DOCKER-ОБРАЗА
+  # 3. ПРОВЕРКА СБОРКИ ОБРАЗА
   build_check:
     name: Check Docker Build
     runs-on: ubuntu-latest
-    needs: test # Если тесты не прошли, собирать образ нет смысла
+    needs: test
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        # Просто проверяем, что образ собирается без ошибок
         run: docker build . -t habit_tracker_test:latest
 
   # 4. ДЕПЛОЙ НА СЕРВЕР
   deploy:
     name: Deploy to Yandex Cloud VM
     runs-on: ubuntu-latest
-    # Запускается только если прошли линтинг, тесты и сборка
     needs: [lint, test, build_check]
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        # Используем проверенный экшен appleboy для SSH
-        uses: appleboy/ssh-action@v1.0.3
+      # Добавляем приватный ключ в ssh-agent
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      # Подключаемся и запускаем команды на удаленном сервере
+      - name: Run Server
+        run: |
+          ssh -o StrictHostKeyChecking=no -vT ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            # 1. Переходим в домашнюю папку пользователя
             cd ~
+            
+            # 2. Удаляем старую папку, если существует
             rm -rf ${{ env.PROJECT_NAME }}
+            
+            # 3. Клонируем свежую версию кода
             git clone --branch main https://github.com/${{ github.repository }}.git ${{ env.PROJECT_NAME }}
             cd ${{ env.PROJECT_NAME }}
+            
+            # 4. Создаем .env файл из секрета GitHub
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            
+            # 5. Сборка и запуск контейнеров Docker Compose
             sudo docker compose down
             sudo docker compose up --build -d
+            
             echo "Deployment finished successfully!"
+          EOF
