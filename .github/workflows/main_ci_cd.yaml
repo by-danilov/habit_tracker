@@ -113,7 +113,7 @@ jobs:
             cd ~
             
             # 2. Удаляем старую папку, если существует
-            rm -rf ${{ env.PROJECT_NAME }}
+            sudo rm -rf ${{ env.PROJECT_NAME }}
             
             # 3. Клонируем свежую версию кода
             git clone --branch main https://github.com/${{ github.repository }}.git ${{ env.PROJECT_NAME }}
